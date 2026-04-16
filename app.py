@@ -4,8 +4,9 @@ import json
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import re
 from typing import TypedDict, cast, override
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 from parser import AnalysisResult, analyze_log
 
@@ -34,7 +35,17 @@ class LogAnalyzerHandler(BaseHTTPRequestHandler):
         path = parsed.path
 
         if path == "/api/logs":
-            self._send_json({"logs": self._build_log_summaries()})
+            query_params = parse_qs(parsed.query)
+            query = query_params.get("query", [""])[0]
+            use_regex = query_params.get("regex", ["0"])[0] == "1"
+
+            try:
+                logs = self._build_log_summaries(query=query, use_regex=use_regex)
+            except re.error as error:
+                self._send_json({"error": f"Invalid regex: {error.msg}"}, HTTPStatus.BAD_REQUEST)
+                return
+
+            self._send_json({"logs": logs})
             return
 
         if path.startswith("/api/logs/"):
@@ -120,12 +131,16 @@ class LogAnalyzerHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
-    def _build_log_summaries(self) -> list[RepoLogSummary]:
+    def _build_log_summaries(self, query: str = "", use_regex: bool = False) -> list[RepoLogSummary]:
         summaries: list[RepoLogSummary] = []
+        compiled_query = compile_search_pattern(query, use_regex)
+
         for log_path in sorted(EXAMPLE_LOGS_DIR.iterdir()):
             if not log_path.is_file():
                 continue
             log_text = log_path.read_text(encoding="utf-8")
+            if not log_matches_query(log_path.name, log_text, compiled_query):
+                continue
             analysis = analyze_log(log_text)
             primary_message = analysis["findings"][0]["message"] if analysis["findings"] else "No findings"
             summaries.append(
@@ -162,6 +177,21 @@ def run(host: str = "127.0.0.1", port: int = 8000) -> None:
     server = ThreadingHTTPServer((host, port), LogAnalyzerHandler)
     print(f"Serving log analyzer at http://{host}:{port}")
     server.serve_forever()
+
+
+def compile_search_pattern(query: str, use_regex: bool) -> re.Pattern[str] | None:
+    stripped_query = query.strip()
+    if not stripped_query:
+        return None
+    if use_regex:
+        return re.compile(stripped_query, re.IGNORECASE)
+    return re.compile(re.escape(stripped_query), re.IGNORECASE)
+
+
+def log_matches_query(log_name: str, log_text: str, pattern: re.Pattern[str] | None) -> bool:
+    if pattern is None:
+        return True
+    return pattern.search(log_name) is not None or pattern.search(log_text) is not None
 
 
 if __name__ == "__main__":

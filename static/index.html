@@ -18,6 +18,14 @@
 
       <section class="workspace">
         <aside class="panel list-panel">
+          <form id="search-form" class="search-form">
+            <label class="search-label" for="search-query">Search Logs</label>
+            <input id="search-query" class="search-input" type="search" placeholder="Search text or regex..." />
+            <label class="search-toggle">
+              <input id="search-regex" type="checkbox" />
+              <span>Use regex</span>
+            </label>
+          </form>
           <div id="status" class="status">Loading example logs...</div>
           <div id="log-list" class="log-list"></div>
         </aside>

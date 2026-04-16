@@ -1,3 +1,6 @@
+const searchForm = document.querySelector("#search-form");
+const searchQuery = document.querySelector("#search-query");
+const searchRegex = document.querySelector("#search-regex");
 const status = document.querySelector("#status");
 const logList = document.querySelector("#log-list");
 const detailEmpty = document.querySelector("#detail-empty");
@@ -10,22 +13,65 @@ const findings = document.querySelector("#findings");
 const rawLogContent = document.querySelector("#raw-log-content");
 
 let activeLogName = "";
+let currentLogs = [];
 
 loadLogs();
 
+searchForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await loadLogs();
+});
+
+searchQuery.addEventListener("input", async () => {
+  await loadLogs();
+});
+
+searchRegex.addEventListener("change", async () => {
+  await loadLogs();
+});
+
 async function loadLogs() {
-  const response = await fetch("/api/logs");
+  const params = new URLSearchParams();
+  const query = searchQuery.value.trim();
+  if (query) {
+    params.set("query", query);
+  }
+  if (searchRegex.checked) {
+    params.set("regex", "1");
+  }
+
+  const requestUrl = params.size > 0 ? `/api/logs?${params.toString()}` : "/api/logs";
+  const response = await fetch(requestUrl);
   const payload = await response.json();
 
   if (!response.ok) {
     status.textContent = payload.error || "Failed to load example logs.";
+    currentLogs = [];
+    renderLogList(currentLogs);
+    detailEmpty.hidden = false;
+    detailView.hidden = true;
     return;
   }
 
-  renderLogList(payload.logs);
-  status.textContent = `${payload.logs.length} example logs available.`;
-  if (payload.logs.length > 0) {
-    await loadLogDetail(payload.logs[0].name);
+  currentLogs = payload.logs;
+  renderLogList(currentLogs);
+
+  if (currentLogs.length === 0) {
+    activeLogName = "";
+    detailEmpty.hidden = false;
+    detailView.hidden = true;
+    status.textContent = query
+      ? "No logs matched the current search."
+      : "No example logs available.";
+    return;
+  }
+
+  status.textContent = `${currentLogs.length} log${currentLogs.length === 1 ? "" : "s"} matched.`;
+  const nextLogName = currentLogs.some((log) => log.name === activeLogName)
+    ? activeLogName
+    : currentLogs[0].name;
+  if (nextLogName) {
+    await fetchLogDetail(nextLogName, false);
   }
 }
 
@@ -59,6 +105,10 @@ function renderLogList(logs) {
 }
 
 async function loadLogDetail(name) {
+  await fetchLogDetail(name, true);
+}
+
+async function fetchLogDetail(name, refreshListStatus) {
   activeLogName = name;
   status.textContent = `Loading ${name}...`;
 
@@ -70,10 +120,10 @@ async function loadLogDetail(name) {
   }
 
   renderResults(payload);
-  const logListResponse = await fetch("/api/logs");
-  const logListPayload = await logListResponse.json();
-  renderLogList(logListPayload.logs);
-  status.textContent = `Viewing ${name}.`;
+  renderLogList(currentLogs);
+  if (refreshListStatus) {
+    status.textContent = `Viewing ${name}.`;
+  }
 }
 
 function renderResults(payload) {
