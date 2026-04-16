@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Log Analyzer</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <header class="topbar panel">
+        <div>
+          <p class="eyebrow">Repo Logs</p>
+          <h1>Example Log Browser</h1>
+        </div>
+        <p class="intro">Select a sample log from the repo to inspect its parsed findings.</p>
+      </header>
+
+      <section class="workspace">
+        <aside class="panel list-panel">
+          <div id="status" class="status">Loading example logs...</div>
+          <div id="log-list" class="log-list"></div>
+        </aside>
+
+        <section class="panel detail-panel">
+          <div id="detail-empty" class="empty-state">Choose a log to view its warnings, crashes, and raw contents.</div>
+          <div id="detail-view" class="detail-view" hidden>
+            <div class="detail-heading">
+              <div>
+                <p class="eyebrow">Selected Log</p>
+                <h2 id="log-name" class="detail-title"></h2>
+              </div>
+              <p id="log-language" class="detail-language"></p>
+            </div>
+            <div id="summary" class="summary-grid"></div>
+            <div id="crash-types" class="chip-row"></div>
+            <div id="findings" class="findings"></div>
+            <details class="raw-log">
+              <summary>Raw Log</summary>
+              <pre id="raw-log-content"></pre>
+            </details>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

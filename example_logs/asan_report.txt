@@ -1,0 +1,9 @@
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==167744==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000030
+==167744==The signal is caused by a READ memory access.
+==167744==Hint: address points to the zero page.
+    #0 0x55f78abcb165 in example() /src/example.cxx:851:15
+    #1 0x55f78abbc626 in runner() /src/example.cxx:36:26
+SUMMARY: AddressSanitizer: SEGV /src/example.cxx:851:15 in example()
+==167744==ABORTING

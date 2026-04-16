@@ -1,0 +1,3 @@
+src/main.cpp:12: warning: comparison between signed and unsigned integer expressions
+ld: undefined reference to `Widget::run()`
+collect2: error: ld returned 1 exit status
